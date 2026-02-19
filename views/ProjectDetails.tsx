@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 
 const ProjectDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -48,9 +49,16 @@ const ProjectDetails: React.FC = () => {
 
     setSubmitting(true);
     try {
+      // Get current auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
       const response = await fetch('/api/submit-project', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ projectId: project.id }),
       });
 

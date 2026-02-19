@@ -49,9 +49,20 @@ app.post('/api/submit-project', async (req, res) => {
         if (!projectId) return res.status(400).json({ error: 'Project ID required' });
         if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
-        // 0. Fetch secretary email from profile (dynamic, always latest)
+        // Verify auth token
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Missing or invalid authorization token' });
+        }
+        const token = authHeader.split(' ')[1];
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !user) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+
+        // 0. Fetch secretary email from authenticated user's profile
         const { data: profileData } = await supabase
-            .from('profiles').select('secretary_email, email').limit(1).single();
+            .from('profiles').select('secretary_email, email').eq('id', user.id).single();
 
         const SECRETARY_EMAIL = profileData?.secretary_email || profileData?.email || '1604285278@qq.com';
         console.log(`Sending to secretary: ${SECRETARY_EMAIL}`);

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Expense, Project, TransactionStatus } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 interface AppContextType {
   expenses: Expense[];
@@ -52,47 +53,55 @@ function mapDbProject(row: any): Project {
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      // Fetch projects
+      // RLS automatically scopes to the current user, but we include user_id filter for clarity
       const { data: projectRows, error: projErr } = await supabase
         .from('projects')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (projErr) throw projErr;
       setProjects((projectRows || []).map(mapDbProject));
 
-      // Fetch expenses with their attachments
       const { data: expenseRows, error: expErr } = await supabase
         .from('expenses')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (expErr) throw expErr;
 
-      // Fetch attachments separately
-      const { data: attachmentRows } = await supabase
-        .from('attachments')
-        .select('*');
+      // Fetch attachments for these expenses
+      const expenseIds = (expenseRows || []).map((r: any) => r.id);
+      let attachmentsByExpense: Record<string, any[]> = {};
 
-      const attachmentsByExpense: Record<string, any[]> = {};
-      (attachmentRows || []).forEach((att: any) => {
-        if (!attachmentsByExpense[att.expense_id]) {
-          attachmentsByExpense[att.expense_id] = [];
-        }
-        attachmentsByExpense[att.expense_id].push({
-          id: att.id,
-          url: att.url,
-          type: att.type,
-          name: att.name,
+      if (expenseIds.length > 0) {
+        const { data: attachmentRows } = await supabase
+          .from('attachments')
+          .select('*')
+          .in('expense_id', expenseIds);
+
+        (attachmentRows || []).forEach((att: any) => {
+          if (!attachmentsByExpense[att.expense_id]) {
+            attachmentsByExpense[att.expense_id] = [];
+          }
+          attachmentsByExpense[att.expense_id].push({
+            id: att.id,
+            url: att.url,
+            type: att.type,
+            name: att.name,
+          });
         });
-      });
+      }
 
       const mappedExpenses = (expenseRows || []).map((row: any) => ({
         ...mapDbExpense(row),
@@ -105,14 +114,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   const updateExpense = async (id: string, updates: Partial<Expense>) => {
-    // Build the DB update object (convert camelCase to snake_case)
     const dbUpdates: Record<string, any> = {};
     if (updates.merchant !== undefined) dbUpdates.merchant = updates.merchant;
     if (updates.expenseName !== undefined) dbUpdates.expense_name = updates.expenseName;
@@ -140,10 +148,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Handle attachments update
     if (updates.attachments !== undefined) {
-      // Delete existing attachments for this expense
       await supabase.from('attachments').delete().eq('expense_id', id);
 
-      // Insert new attachments
       if (updates.attachments.length > 0) {
         const attInserts = updates.attachments.map(att => ({
           id: att.id,
@@ -156,15 +162,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // Optimistic update in state
     setExpenses(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
   };
 
   const addExpense = async (expense: Omit<Expense, 'id'>): Promise<string> => {
+    if (!user) throw new Error('Not authenticated');
     const id = crypto.randomUUID();
 
     const { error } = await supabase.from('expenses').insert({
       id,
+      user_id: user.id,
       merchant: expense.merchant,
       expense_name: expense.expenseName || expense.merchant,
       amount: expense.amount,
@@ -196,7 +203,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await supabase.from('attachments').insert(attInserts);
     }
 
-    // Optimistic update
     setExpenses(prev => [{ ...expense, id }, ...prev]);
     return id;
   };
@@ -211,7 +217,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addProject = async (name: string): Promise<string> => {
-    // Get sequential ID from Postgres function
+    if (!user) throw new Error('Not authenticated');
+
     const { data: seqId, error: seqErr } = await supabase.rpc('next_project_id');
     if (seqErr || !seqId) {
       console.error('Error getting next project ID:', seqErr);
@@ -222,6 +229,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const { error } = await supabase.from('projects').insert({
       id,
+      user_id: user.id,
       name,
       description: '',
       budget: 0,
@@ -234,7 +242,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return id;
     }
 
-    // Optimistic update
     setProjects(prev => [...prev, {
       id,
       name,
@@ -248,7 +255,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const submitProject = async (projectId: string) => {
-    // Update project status
     const { error: projErr } = await supabase
       .from('projects')
       .update({ status: 'submitted', updated_at: new Date().toISOString() })
@@ -259,7 +265,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Update all expenses linked to this project
     const { error: expErr } = await supabase
       .from('expenses')
       .update({ status: TransactionStatus.SUBMITTED, updated_at: new Date().toISOString() })
@@ -270,13 +275,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Optimistic updates
     setProjects(prev => prev.map(p => p.id === projectId ? { ...p, status: 'submitted' } : p));
     setExpenses(prev => prev.map(e => e.projectId === projectId ? { ...e, status: TransactionStatus.SUBMITTED } : e));
   };
 
   const deleteProject = async (id: string) => {
-    // Unlink expenses from this project first
     const { error: unlinkErr } = await supabase
       .from('expenses')
       .update({ project_id: null, status: TransactionStatus.PENDING, updated_at: new Date().toISOString() })
@@ -287,14 +290,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Delete the project
     const { error } = await supabase.from('projects').delete().eq('id', id);
     if (error) {
       console.error('Error deleting project:', error);
       return;
     }
 
-    // Optimistic updates
     setExpenses(prev => prev.map(e => e.projectId === id ? { ...e, projectId: null, status: TransactionStatus.PENDING } : e));
     setProjects(prev => prev.filter(p => p.id !== id));
   };

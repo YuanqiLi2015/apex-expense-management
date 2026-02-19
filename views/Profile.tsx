@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfileData {
   id: string;
@@ -12,6 +13,7 @@ interface ProfileData {
 }
 
 const Profile: React.FC = () => {
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<ProfileData>({
     id: '',
     name: 'Loading...',
@@ -25,11 +27,12 @@ const Profile: React.FC = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .limit(1)
+      .eq('id', user.id)
       .single();
 
     if (error) {
@@ -49,7 +52,7 @@ const Profile: React.FC = () => {
       });
     }
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchProfile();
@@ -219,6 +222,17 @@ const Profile: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Sign Out */}
+        <div className="px-6 mt-8 mb-8">
+          <button
+            onClick={signOut}
+            className="w-full flex items-center justify-center gap-3 p-5 rounded-[2.25rem] bg-white border border-red-100 hover:bg-red-50 transition-all group active:scale-[0.98] shadow-sm hover:shadow-soft"
+          >
+            <span className="material-symbols-outlined text-red-400 text-[22px]">logout</span>
+            <span className="text-[15px] font-black text-red-400 group-hover:text-red-500 transition-colors">Sign Out</span>
+          </button>
         </div>
       </main>
     </div>
