@@ -28,8 +28,8 @@ if (!supabaseUrl || !supabaseKey) {
     console.warn('Warning: Missing Supabase URL/Key in environment variables. Check .env.local file.');
 }
 
-// Create Supabase client (RLS policies are open, no auth needed)
-const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+// Create base Supabase client (for auth verification only)
+const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 // SMTP Transporter (configured for iCloud)
 const transporter = nodemailer.createTransport({
@@ -47,7 +47,7 @@ app.post('/api/submit-project', async (req, res) => {
         const { projectId } = req.body;
 
         if (!projectId) return res.status(400).json({ error: 'Project ID required' });
-        if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+        if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase not configured' });
 
         // Verify auth token
         const authHeader = req.headers.authorization;
@@ -55,10 +55,15 @@ app.post('/api/submit-project', async (req, res) => {
             return res.status(401).json({ error: 'Missing or invalid authorization token' });
         }
         const token = authHeader.split(' ')[1];
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
         if (authError || !user) {
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
+
+        // Create authenticated Supabase client with user's token (so RLS works)
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+            global: { headers: { Authorization: `Bearer ${token}` } }
+        });
 
         // 0. Fetch secretary email from authenticated user's profile
         const { data: profileData } = await supabase
