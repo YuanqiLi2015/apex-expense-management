@@ -48,19 +48,24 @@ const ProjectDetails: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // Call local email server (bypassing cloud SMTP port blocks)
       const response = await fetch('/api/submit-project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId: project.id }),
       });
 
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'Failed to submit via local server');
+      let result;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Server returned non-JSON response (${response.status}): ${text.slice(0, 100)}`);
       }
 
-      const result = await response.json(); // { success: true, message, summary }
+      if (!response.ok) {
+        throw new Error(result?.error || result?.message || 'Failed to submit report');
+      }
 
       // Update project status in DB
       await submitProject(project.id);
@@ -69,7 +74,11 @@ const ProjectDetails: React.FC = () => {
       navigate('/submit-success', { state: { summary: result.summary } });
     } catch (err: any) {
       console.error('Submit error:', err);
-      alert(`Submission failed: ${err.message}`);
+      // More descriptive error for Base64/Pattern issues
+      const msg = err.message === 'The string did not match the expected pattern.'
+        ? 'Base64 decoding failed (malformed attachment data). Please check your receipt images.'
+        : err.message;
+      alert(`Submission failed: ${msg}`);
       setSubmitting(false);
     }
   };
