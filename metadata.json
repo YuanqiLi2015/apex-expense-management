@@ -1,0 +1,7 @@
+{
+  "name": "Apex Expense Management",
+  "description": "An elite expense management platform for corporate executives featuring receipt scanning, project-based budgeting, and smart spend tracking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
