@@ -48,8 +48,8 @@ const Dashboard: React.FC = () => {
 
     return (
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 bg-[#FBFBFE] font-sans">
-            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl px-6 pt-12 pb-5 border-b border-gray-100/50">
-                <div className="flex items-center justify-between h-12">
+            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl border-b border-gray-100/50 pt-12 pb-5">
+                <div className="max-w-screen-xl mx-auto px-6 h-12 flex items-center justify-between">
                     <h1 className="text-[32px] font-[900] text-secondary tracking-tight">Dashboard</h1>
                     <button
                         onClick={() => navigate('/profile')}
@@ -60,7 +60,7 @@ const Dashboard: React.FC = () => {
                 </div>
             </header>
 
-            <main className="px-6 pt-8">
+            <main className="max-w-screen-xl mx-auto px-6 pt-8">
                 <div className="w-full bg-white rounded-[2.5rem] shadow-executive p-7 mb-10 border border-gray-100/50">
                     <div className="flex items-center justify-between mb-8 px-1 gap-4">
                         <h2 className="text-[20px] xs:text-[24px] font-[900] text-[#D4AF37] tracking-tighter uppercase whitespace-nowrap">Spending Overview</h2>
@@ -142,7 +142,7 @@ const Dashboard: React.FC = () => {
                     <h2 className="text-[22px] font-[900] text-secondary mb-7 px-1 flex items-center gap-3 tracking-tight">
                         Required Actions
                     </h2>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                         <div
                             onClick={() => navigate('/expenses')}
                             className="bg-white rounded-[2.5rem] p-6 shadow-soft hover:shadow-card transition-all duration-300 group cursor-pointer border border-gray-100 hover:border-[#D4AF37]/30 active:scale-95"

@@ -46,95 +46,99 @@ const Expenses: React.FC = () => {
 
     return (
         <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 bg-[#FBFBFE] font-sans">
-            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl px-6 pt-12 pb-4 border-b border-gray-100/50">
-                <div className="flex items-center justify-between h-12 mb-6">
-                    {!isSearchVisible ? (
-                        <>
-                            <h1 className="text-[32px] font-[900] text-secondary tracking-tight">Expenses</h1>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setIsSearchVisible(true)}
-                                    className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card text-secondary hover:bg-gray-50 transition-all border border-gray-100 active:scale-90"
-                                >
-                                    <span className="material-symbols-outlined text-[24px]">search</span>
-                                </button>
-                                <div className="relative">
+            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl border-b border-gray-100/50 pt-12 pb-4">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <div className="flex items-center justify-between h-12 mb-6">
+                        {!isSearchVisible ? (
+                            <>
+                                <h1 className="text-[32px] font-[900] text-secondary tracking-tight">Expenses</h1>
+                                <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                        className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card transition-all border border-gray-100 active:scale-90 text-secondary"
+                                        onClick={() => setIsSearchVisible(true)}
+                                        className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card text-secondary hover:bg-gray-50 transition-all border border-gray-100 active:scale-90"
                                     >
-                                        <span className="material-symbols-outlined text-[24px]">sort</span>
+                                        <span className="material-symbols-outlined text-[24px]">search</span>
                                     </button>
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                            className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card transition-all border border-gray-100 active:scale-90 text-secondary"
+                                        >
+                                            <span className="material-symbols-outlined text-[24px]">sort</span>
+                                        </button>
 
-                                    {isFilterOpen && (
-                                        <>
-                                            <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)}></div>
-                                            <div className="absolute right-0 mt-4 w-56 bg-white rounded-[2rem] shadow-executive border border-gray-100 py-3 z-50 animate-in fade-in zoom-in-95 duration-200 p-1">
-                                                <p className="px-5 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-tight border-b border-gray-50 mb-1">SORT BY</p>
-                                                {[
-                                                    { id: 'date-new', label: 'Newest First', icon: 'schedule' },
-                                                    { id: 'date-old', label: 'Oldest First', icon: 'history' },
-                                                    { id: 'amount-high', label: 'Highest Amount', icon: 'payments' },
-                                                    { id: 'amount-low', label: 'Lowest Amount', icon: 'vertical_align_bottom' },
-                                                ].map((option) => (
-                                                    <button
-                                                        key={option.id}
-                                                        onClick={() => { setSortBy(option.id as any); setIsFilterOpen(false); }}
-                                                        className={`w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-extrabold transition-all rounded-[1.25rem] ${sortBy === option.id ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-secondary hover:bg-gray-50'}`}
-                                                    >
-                                                        <span className="material-symbols-outlined text-[20px]">{option.icon}</span>
-                                                        {option.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </>
-                                    )}
+                                        {isFilterOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-40" onClick={() => setIsFilterOpen(false)}></div>
+                                                <div className="absolute right-0 mt-4 w-56 bg-white rounded-[2rem] shadow-executive border border-gray-100 py-3 z-50 animate-in fade-in zoom-in-95 duration-200 p-1">
+                                                    <p className="px-5 py-2.5 text-[10px] font-black text-gray-400 uppercase tracking-tight border-b border-gray-50 mb-1">SORT BY</p>
+                                                    {[
+                                                        { id: 'date-new', label: 'Newest First', icon: 'schedule' },
+                                                        { id: 'date-old', label: 'Oldest First', icon: 'history' },
+                                                        { id: 'amount-high', label: 'Highest Amount', icon: 'payments' },
+                                                        { id: 'amount-low', label: 'Lowest Amount', icon: 'vertical_align_bottom' },
+                                                    ].map((option) => (
+                                                        <button
+                                                            key={option.id}
+                                                            onClick={() => { setSortBy(option.id as any); setIsFilterOpen(false); }}
+                                                            className={`w-full flex items-center gap-3 px-5 py-3.5 text-[13px] font-extrabold transition-all rounded-[1.25rem] ${sortBy === option.id ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'text-secondary hover:bg-gray-50'}`}
+                                                        >
+                                                            <span className="material-symbols-outlined text-[20px]">{option.icon}</span>
+                                                            {option.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
+                            </>
+                        ) : (
+                            <div className="w-full flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                                <div className="flex-1 relative">
+                                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder="Search merchant, category..."
+                                        className="w-full bg-white border border-gray-100 rounded-full py-3.5 pl-11 pr-5 text-sm font-bold shadow-card focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37]/30 outline-none text-secondary"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
+                                    className="text-gray-400 font-black text-[11px] px-2 hover:text-secondary transition-colors uppercase tracking-tight"
+                                >
+                                    Cancel
+                                </button>
                             </div>
-                        </>
-                    ) : (
-                        <div className="w-full flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
-                            <div className="flex-1 relative">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
-                                <input
-                                    autoFocus
-                                    type="text"
-                                    placeholder="Search merchant, category..."
-                                    className="w-full bg-white border border-gray-100 rounded-full py-3.5 pl-11 pr-5 text-sm font-bold shadow-card focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37]/30 outline-none text-secondary"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <button
-                                onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
-                                className="text-gray-400 font-black text-[11px] px-2 hover:text-secondary transition-colors uppercase tracking-tight"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-                <div className="relative bg-[#E2E8F0]/40 p-1.5 rounded-[1.75rem] flex shadow-inner border border-gray-100/50">
-                    <button
-                        onClick={() => setActiveTab('unassigned')}
-                        className={`flex-1 py-3 text-[11px] font-[900] rounded-[1.25rem] transition-all duration-300 uppercase tracking-tight ${activeTab === 'unassigned' ? 'bg-secondary text-white shadow-lg' : 'text-slate-500 hover:text-secondary'
-                            }`}
-                    >
-                        Unassigned ({expenses.filter(e => !e.projectId).length})
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('assigned')}
-                        className={`flex-1 py-3 text-[11px] font-[900] rounded-[1.25rem] transition-all duration-300 uppercase tracking-tight ${activeTab === 'assigned' ? 'bg-secondary text-white shadow-lg' : 'text-slate-500 hover:text-secondary'
-                            }`}
-                    >
-                        Assigned ({expenses.filter(e => e.projectId).length})
-                    </button>
+                <div className="max-w-screen-xl mx-auto mt-6 px-6">
+                    <div className="relative bg-[#E2E8F0]/40 p-1.5 rounded-[1.75rem] flex shadow-inner border border-gray-100/50">
+                        <button
+                            onClick={() => setActiveTab('unassigned')}
+                            className={`flex-1 py-3 text-[11px] font-[900] rounded-[1.25rem] transition-all duration-300 uppercase tracking-tight ${activeTab === 'unassigned' ? 'bg-secondary text-white shadow-lg' : 'text-slate-500 hover:text-secondary'
+                                }`}
+                        >
+                            Unassigned ({expenses.filter(e => !e.projectId).length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('assigned')}
+                            className={`flex-1 py-3 text-[11px] font-[900] rounded-[1.25rem] transition-all duration-300 uppercase tracking-tight ${activeTab === 'assigned' ? 'bg-secondary text-white shadow-lg' : 'text-slate-500 hover:text-secondary'
+                                }`}
+                        >
+                            Assigned ({expenses.filter(e => e.projectId).length})
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            <main className="px-6 pt-6">
+            <main className="max-w-screen-xl mx-auto px-6 pt-6">
                 {filteredAndSortedItems.length > 0 ? (
-                    <div className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredAndSortedItems.map((item) => (
                             <ExpenseCard
                                 key={item.id}

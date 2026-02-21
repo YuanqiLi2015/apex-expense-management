@@ -203,22 +203,24 @@ const Review: React.FC = () => {
 
     return (
         <div className="flex-1 flex flex-col bg-white relative min-h-screen font-display">
-            <header className="sticky top-0 z-[110] bg-white/95 backdrop-blur-md px-6 pt-12 pb-4 border-b border-gray-100/50">
-                <div className="flex flex-col items-center">
-                    <div className="flex items-center justify-between w-full h-10 mb-2">
-                        <button
-                            onClick={() => navigate(-1)}
-                            className="flex items-center justify-center text-[#d4af35] active:scale-90 transition-transform"
-                        >
-                            <span className="material-symbols-outlined text-2xl font-black">chevron_left</span>
-                        </button>
-                        <h2 className="text-[15px] font-black tracking-tighter text-[#d4af35] uppercase">Expense Details</h2>
-                        <div className="w-10"></div>
+            <header className="sticky top-0 z-[110] bg-white/95 backdrop-blur-md border-b border-gray-100/50 pt-12 pb-4">
+                <div className="max-w-screen-xl mx-auto px-6">
+                    <div className="flex flex-col items-center">
+                        <div className="flex items-center justify-between w-full h-10 mb-2">
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="flex items-center justify-center text-[#d4af35] active:scale-90 transition-transform"
+                            >
+                                <span className="material-symbols-outlined text-2xl font-black">chevron_left</span>
+                            </button>
+                            <h2 className="text-[15px] font-black tracking-tighter text-[#d4af35] uppercase">Expense Details</h2>
+                            <div className="w-10"></div>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <main ref={mainContentRef} className="flex-1 overflow-y-auto hide-scrollbar pb-80">
+            <main ref={mainContentRef} className="flex-1 overflow-y-auto hide-scrollbar pb-80 max-w-screen-xl mx-auto w-full">
                 <div className="mt-8 px-6 text-center">
                     <div className="flex items-baseline justify-center gap-1.5 relative">
                         <span className="text-3xl font-[900] text-slate-300 tracking-tighter">¥</span>
@@ -375,23 +377,25 @@ const Review: React.FC = () => {
                 </div>
             </main>
 
-            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white p-6 pb-12 z-[130] shadow-[0_-20px_60px_rgba(255,255,255,1)]">
-                <button
-                    onClick={handleSave}
-                    className="w-full bg-[#D4AF37] hover:bg-[#B09028] text-white font-black py-6 rounded-full shadow-fab transition-all active:scale-[0.98] flex items-center justify-center gap-4 group"
-                >
-                    <span className="material-symbols-outlined fill-1 text-[26px] group-hover:rotate-12 transition-transform">verified</span>
-                    <span className="uppercase tracking-tighter text-[15px]">CONFIRM AND SAVE</span>
-                </button>
-                {isExistingExpense && (
+            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-screen-2xl bg-white p-6 pb-12 z-[130] shadow-[0_-20px_60px_rgba(255,255,255,1)]">
+                <div className="max-w-screen-xl mx-auto">
                     <button
-                        onClick={handleDeleteExpense}
-                        className="w-full mt-3 py-3 rounded-full border border-red-200 text-red-400 font-black text-xs uppercase tracking-tight hover:bg-red-50 transition-colors active:scale-[0.97] flex items-center justify-center gap-2"
+                        onClick={handleSave}
+                        className="w-full bg-[#D4AF37] hover:bg-[#B09028] text-white font-black py-6 rounded-full shadow-fab transition-all active:scale-[0.98] flex items-center justify-center gap-4 group"
                     >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                        Delete Expense
+                        <span className="material-symbols-outlined fill-1 text-[26px] group-hover:rotate-12 transition-transform">verified</span>
+                        <span className="uppercase tracking-tighter text-[15px]">CONFIRM AND SAVE</span>
                     </button>
-                )}
+                    {isExistingExpense && (
+                        <button
+                            onClick={handleDeleteExpense}
+                            className="w-full mt-3 py-3 rounded-full border border-red-200 text-red-400 font-black text-xs uppercase tracking-tight hover:bg-red-50 transition-colors active:scale-[0.97] flex items-center justify-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                            Delete Expense
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

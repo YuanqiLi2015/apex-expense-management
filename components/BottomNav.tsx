@@ -21,7 +21,7 @@ const BottomNav: React.FC = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-50 pointer-events-none">
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-screen-2xl z-50 pointer-events-none">
       {/* Floating Action Button (Camera) - Only show on Dashboard */}
       {showFab && (
         <div className="relative w-full h-0">

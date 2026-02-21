@@ -100,20 +100,22 @@ const ProjectDetails: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-white relative">
-      <header className="sticky top-0 z-[110] bg-white/95 backdrop-blur-md px-6 pt-12 pb-4 border-b border-gray-100/50">
-        <div className="flex items-center justify-between h-10">
-          <button
-            onClick={() => navigate('/projects')}
-            className="flex items-center justify-center text-[#d4af35] active:scale-90 transition-transform"
-          >
-            <span className="material-symbols-outlined text-2xl font-black">chevron_left</span>
-          </button>
-          <h2 className="text-[15px] font-black tracking-tight text-[#d4af35] uppercase">Project Details</h2>
-          <div className="w-10"></div>
+      <header className="sticky top-0 z-[110] bg-white/95 backdrop-blur-md border-b border-gray-100/50 pt-12 pb-4">
+        <div className="max-w-screen-xl mx-auto px-6">
+          <div className="flex items-center justify-between h-10">
+            <button
+              onClick={() => navigate('/projects')}
+              className="flex items-center justify-center text-[#d4af35] active:scale-90 transition-transform"
+            >
+              <span className="material-symbols-outlined text-2xl font-black">chevron_left</span>
+            </button>
+            <h2 className="text-[15px] font-black tracking-tight text-[#d4af35] uppercase">Project Details</h2>
+            <div className="w-10"></div>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto hide-scrollbar pb-32">
+      <main className="flex-1 overflow-y-auto hide-scrollbar pb-32 max-w-screen-xl mx-auto w-full">
         <div className="px-6 pt-8 pb-4 text-center">
           <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-8 bg-[#D4AF37]/5 border border-[#D4AF37]/10">
             <span className={`w-2 h-2 rounded-full ${project.status === 'submitted' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-[#D4AF37] shadow-[0_0_10px_rgba(212,175,55,0.4)]'}`}></span>
