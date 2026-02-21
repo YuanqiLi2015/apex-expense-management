@@ -132,16 +132,20 @@ const Scan: React.FC = () => {
             <div className="flex flex-col gap-4 w-full max-w-[280px]">
               <button
                 onClick={() => cameraInputRef.current?.click()}
-                className="w-full py-5 rounded-full bg-[#D4AF37] text-white font-black text-sm uppercase tracking-tight shadow-fab hover:bg-[#c4a130] transition-all active:scale-[0.97] flex items-center justify-center gap-3"
+                className="w-full py-5 rounded-full bg-[#D4AF37] text-white font-black text-sm uppercase tracking-tight shadow-fab hover:bg-[#c4a130] transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-10"
               >
-                <span className="material-symbols-outlined text-[22px] fill-1">photo_camera</span>
+                <div className="w-8 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[26px] fill-1">photo_camera</span>
+                </div>
                 Take Photo
               </button>
               <button
                 onClick={() => galleryInputRef.current?.click()}
-                className="w-full py-5 rounded-full bg-white/10 backdrop-blur-md text-white font-black text-sm uppercase tracking-tight hover:bg-white/15 transition-all active:scale-[0.97] flex items-center justify-center gap-3 border border-white/10"
+                className="w-full py-5 rounded-full bg-white/10 backdrop-blur-md text-white font-black text-sm uppercase tracking-tight hover:bg-white/15 transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-10 border border-white/10"
               >
-                <span className="material-symbols-outlined text-[22px]">photo_library</span>
+                <div className="w-8 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[26px]">photo_library</span>
+                </div>
                 Choose from Gallery
               </button>
             </div>
