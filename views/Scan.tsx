@@ -129,24 +129,24 @@ const Scan: React.FC = () => {
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-col gap-4 w-full max-w-[280px]">
+            <div className="flex flex-col gap-4 w-full max-w-[320px]">
               <button
                 onClick={() => cameraInputRef.current?.click()}
-                className="w-full py-5 rounded-full bg-[#D4AF37] text-white font-black text-sm uppercase tracking-tight shadow-fab hover:bg-[#c4a130] transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-10"
+                className="w-full py-5 rounded-full bg-[#D4AF37] text-white font-black text-sm uppercase tracking-tight shadow-fab hover:bg-[#c4a130] transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-8"
               >
-                <div className="w-8 flex items-center justify-center">
+                <div className="w-8 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-[26px] fill-1">photo_camera</span>
                 </div>
-                Take Photo
+                <span className="whitespace-nowrap">Take Photo</span>
               </button>
               <button
                 onClick={() => galleryInputRef.current?.click()}
-                className="w-full py-5 rounded-full bg-white/10 backdrop-blur-md text-white font-black text-sm uppercase tracking-tight hover:bg-white/15 transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-10 border border-white/10"
+                className="w-full py-5 rounded-full bg-white/10 backdrop-blur-md text-white font-black text-sm uppercase tracking-tight hover:bg-white/15 transition-all active:scale-[0.97] flex items-center justify-start gap-4 px-8 border border-white/10"
               >
-                <div className="w-8 flex items-center justify-center">
+                <div className="w-8 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-[26px]">photo_library</span>
                 </div>
-                Choose from Gallery
+                <span className="whitespace-nowrap">Choose from Gallery</span>
               </button>
             </div>
           </div>
