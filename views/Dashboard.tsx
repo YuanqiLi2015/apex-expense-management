@@ -47,8 +47,8 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="flex-1 overflow-y-auto hide-scrollbar pb-28 bg-[#FBFBFE] font-sans">
-            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl px-6 pt-16 pb-5 border-b border-gray-100/50">
+        <div className="flex-1 overflow-y-auto hide-scrollbar pb-32 bg-[#FBFBFE] font-sans">
+            <header className="sticky top-0 z-30 bg-[#FBFBFE]/90 backdrop-blur-xl px-6 pt-12 pb-5 border-b border-gray-100/50">
                 <div className="flex items-center justify-between h-12">
                     <h1 className="text-[32px] font-[900] text-secondary tracking-tight">Dashboard</h1>
                     <button

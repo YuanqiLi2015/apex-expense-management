@@ -66,7 +66,7 @@ const AuthGate: React.FC = () => {
   return (
     <AppProvider>
       <Router>
-        <div className="flex flex-col min-h-screen max-w-md mx-auto bg-white shadow-2xl relative">
+        <div className="flex flex-col h-screen h-[100dvh] max-w-md mx-auto bg-white shadow-2xl relative overflow-hidden">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
