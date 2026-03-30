@@ -54,6 +54,12 @@ const Expenses: React.FC = () => {
                                 <h1 className="text-[32px] font-[900] text-secondary tracking-tight">Expenses</h1>
                                 <div className="flex items-center gap-2">
                                     <button
+                                        onClick={() => navigate('/review')}
+                                        className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card text-secondary hover:bg-gray-50 transition-all border border-gray-100 active:scale-90"
+                                    >
+                                        <span className="material-symbols-outlined text-[24px]">add</span>
+                                    </button>
+                                    <button
                                         onClick={() => setIsSearchVisible(true)}
                                         className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-card text-secondary hover:bg-gray-50 transition-all border border-gray-100 active:scale-90"
                                     >

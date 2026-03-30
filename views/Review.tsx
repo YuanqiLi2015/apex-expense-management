@@ -77,6 +77,7 @@ const Review: React.FC = () => {
         expenseData.amount === 0 ? "" : expenseData.amount.toString()
     );
 
+    const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
     const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
@@ -202,6 +203,7 @@ const Review: React.FC = () => {
     const innerInputClass = "w-full bg-white rounded-[1.75rem] h-14 px-5 border-none focus:ring-0 text-secondary font-black text-lg shadow-sm";
 
     return (
+        <>
         <div className="flex-1 flex flex-col bg-white relative min-h-screen font-display">
             <header className="sticky top-0 z-[110] bg-white/95 backdrop-blur-md border-b border-gray-100/50 pt-12 pb-4">
                 <div className="max-w-screen-xl mx-auto px-6">
@@ -349,7 +351,11 @@ const Review: React.FC = () => {
                             {attachments.map((att) => {
                                 const isPdf = att.type === 'application/pdf' || att.name?.toLowerCase().endsWith('.pdf');
                                 return (
-                                    <div key={att.id} className="relative aspect-square rounded-[2rem] overflow-hidden bg-white p-1.5 shadow-md border border-slate-100">
+                                    <div
+                                        key={att.id}
+                                        className="relative aspect-square rounded-[2rem] overflow-hidden bg-white p-1.5 shadow-md border border-slate-100 cursor-pointer group/att hover:shadow-lg hover:border-[#D4AF37]/30 transition-all active:scale-[0.97]"
+                                        onClick={() => setPreviewAttachment(att)}
+                                    >
                                         {isPdf ? (
                                             <div className="w-full h-full rounded-[1.75rem] bg-red-50 flex flex-col items-center justify-center gap-2">
                                                 <span className="material-symbols-outlined text-red-400 text-[36px]">picture_as_pdf</span>
@@ -358,7 +364,10 @@ const Review: React.FC = () => {
                                         ) : (
                                             <img src={att.url} alt={att.name} className="w-full h-full object-cover rounded-[1.75rem]" />
                                         )}
-                                        <button onClick={(e) => { e.stopPropagation(); removeAttachment(att.id); }} className="absolute top-3 right-3 bg-red-500 text-white size-7 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+                                        <div className="absolute inset-1.5 rounded-[1.75rem] bg-black/0 group-hover/att:bg-black/5 transition-colors flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-white text-[28px] opacity-0 group-hover/att:opacity-80 transition-opacity drop-shadow-lg">visibility</span>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); removeAttachment(att.id); }} className="absolute top-3 right-3 bg-red-500 text-white size-7 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform z-10">
                                             <span className="material-symbols-outlined text-[16px] font-black">close</span>
                                         </button>
                                     </div>
@@ -398,6 +407,50 @@ const Review: React.FC = () => {
                 </div>
             </div>
         </div>
+
+            {previewAttachment && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setPreviewAttachment(null)}
+                >
+                    <div
+                        className="relative max-w-[92vw] max-h-[85vh] animate-in zoom-in-95 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={() => setPreviewAttachment(null)}
+                            className="absolute -top-4 -right-4 z-10 bg-white text-secondary size-10 rounded-full flex items-center justify-center shadow-executive active:scale-90 transition-transform border border-gray-100"
+                        >
+                            <span className="material-symbols-outlined text-[22px] font-black">close</span>
+                        </button>
+                        {(previewAttachment.type === 'application/pdf' || previewAttachment.name?.toLowerCase().endsWith('.pdf')) ? (
+                            <div className="bg-white rounded-[2.5rem] p-6 shadow-executive border border-gray-100 flex flex-col items-center gap-6 min-w-[280px]">
+                                <div className="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-red-400 text-[48px]">picture_as_pdf</span>
+                                </div>
+                                <p className="text-[14px] font-black text-secondary tracking-tight text-center max-w-[250px] truncate">{previewAttachment.name || 'PDF Document'}</p>
+                                <a
+                                    href={previewAttachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-[#D4AF37] hover:bg-[#B09028] text-white font-black py-3.5 px-8 rounded-full shadow-fab transition-all active:scale-[0.98] uppercase tracking-tight text-[11px] flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                                    Open PDF
+                                </a>
+                            </div>
+                        ) : (
+                            <img
+                                src={previewAttachment.url}
+                                alt={previewAttachment.name}
+                                className="max-w-[92vw] max-h-[85vh] object-contain rounded-[2rem] shadow-executive"
+                            />
+                        )}
+                        <p className="text-center mt-4 text-white/70 text-[11px] font-black uppercase tracking-tight truncate max-w-[250px] mx-auto">{previewAttachment.name}</p>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 
