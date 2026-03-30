@@ -425,19 +425,37 @@ const Review: React.FC = () => {
                         </button>
                         {(previewAttachment.type === 'application/pdf' || previewAttachment.name?.toLowerCase().endsWith('.pdf')) ? (
                             <div className="bg-white rounded-[2.5rem] p-6 shadow-executive border border-gray-100 flex flex-col items-center gap-6 min-w-[280px]">
-                                <div className="w-24 h-24 rounded-full bg-red-50 flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-red-400 text-[48px]">picture_as_pdf</span>
+                                <div className="w-full rounded-[1.75rem] overflow-hidden bg-gray-50 border border-gray-100" style={{ width: '80vw', maxWidth: '600px', height: '65vh' }}>
+                                    <iframe
+                                        src={previewAttachment.url}
+                                        title={previewAttachment.name || 'PDF Preview'}
+                                        className="w-full h-full border-none"
+                                    />
                                 </div>
-                                <p className="text-[14px] font-black text-secondary tracking-tight text-center max-w-[250px] truncate">{previewAttachment.name || 'PDF Document'}</p>
-                                <a
-                                    href={previewAttachment.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-[#D4AF37] hover:bg-[#B09028] text-white font-black py-3.5 px-8 rounded-full shadow-fab transition-all active:scale-[0.98] uppercase tracking-tight text-[11px] flex items-center gap-2"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                                    Open PDF
-                                </a>
+                                <div className="flex items-center gap-3">
+                                    <p className="text-[13px] font-black text-secondary tracking-tight truncate max-w-[200px]">{previewAttachment.name || 'PDF Document'}</p>
+                                    <button
+                                        onClick={() => {
+                                            const url = previewAttachment.url;
+                                            if (url.startsWith('data:')) {
+                                                // Convert data URL to Blob URL (browsers block data: URLs in new tabs)
+                                                const [header, base64] = url.split(',');
+                                                const mime = header.match(/:(.*?);/)?.[1] || 'application/pdf';
+                                                const binary = atob(base64);
+                                                const bytes = new Uint8Array(binary.length);
+                                                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                                                const blob = new Blob([bytes], { type: mime });
+                                                window.open(URL.createObjectURL(blob), '_blank');
+                                            } else {
+                                                window.open(url, '_blank');
+                                            }
+                                        }}
+                                        className="bg-[#D4AF37] hover:bg-[#B09028] text-white font-black py-2.5 px-5 rounded-full shadow-fab transition-all active:scale-[0.98] uppercase tracking-tight text-[10px] flex items-center gap-1.5 whitespace-nowrap"
+                                    >
+                                        <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                        Open
+                                    </button>
+                                </div>
                             </div>
                         ) : (
                             <img
