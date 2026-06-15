@@ -1,8 +1,10 @@
 
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const Scan: React.FC = () => {
   const navigate = useNavigate();
@@ -32,10 +34,14 @@ const Scan: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/ocr-receipt`, {
+      // Get the current session token for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(`/api/ocr-receipt`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
         },
         body: JSON.stringify({ image: base64Image }),
       });

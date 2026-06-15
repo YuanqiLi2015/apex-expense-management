@@ -84,6 +84,17 @@ const SubmitSuccess: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Back to Projects Button */}
+            <div className={`w-full max-w-sm mt-6 transition-all duration-700 delay-700 ${showContent ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
+                <button
+                    onClick={() => navigate('/projects')}
+                    className="w-full py-4 rounded-full bg-[#D4AF37] text-white font-black text-sm uppercase tracking-tight shadow-fab hover:bg-[#c4a130] transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+                >
+                    <span className="material-symbols-outlined text-[20px] fill-1">arrow_back</span>
+                    Back to Projects
+                </button>
+            </div>
         </div>
     );
 };

@@ -7,8 +7,8 @@ const BottomNav: React.FC = () => {
   const location = useLocation();
   const activeTab = location.pathname;
 
-  // Do not show bottom nav on scan or review screens
-  if (activeTab === '/scan' || activeTab === '/review') return null;
+  // Do not show bottom nav on scan, review, or submit-success screens
+  if (activeTab === '/scan' || activeTab === '/review' || activeTab === '/submit-success') return null;
 
   // Logic: Only show the FAB (camera button) on the Dashboard page
   const showFab = activeTab === '/dashboard';
