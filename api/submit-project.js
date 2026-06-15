@@ -193,9 +193,9 @@ export default async function handler(req, res) {
         });
 
         await transporter.sendMail({
-            from: \`Apex Expense System <\${ICLOUD_EMAIL}>\`,
+            from: `Apex Expense System <${ICLOUD_EMAIL}>`,
             to: SECRETARY_EMAIL,
-            subject: \`[Apex Report] \${project.name} - ¥\${totalAmount.toFixed(2)}\`,
+            subject: `[Apex Report] ${project.name} - ¥${totalAmount.toFixed(2)}`,
             html: htmlBody,
             attachments: emailAttachments,
         });
