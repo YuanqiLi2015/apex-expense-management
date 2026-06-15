@@ -47,8 +47,15 @@ const Scan: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || 'OCR failed');
+        let errBody;
+        try {
+          const errData = await response.json();
+          errBody = errData.error || 'OCR failed (Server error)';
+        } catch {
+          // If the server returns HTML (e.g. 404 not found if local server is not restarted)
+          errBody = `OCR failed: Server returned ${response.status}. Please restart your local server.`;
+        }
+        throw new Error(errBody);
       }
 
       const ocrData = await response.json();
