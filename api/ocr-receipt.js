@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
         const base64Data = image.includes(',') ? image.split(',')[1] : image;
         const mimeType = image.startsWith('data:') ? image.split(';')[0].split(':')[1] : 'image/jpeg';
-        const GEMINI_MODEL = 'gemini-3.5-flash';
+        const GEMINI_MODEL = 'gemini-2.0-flash';
 
         const prompt = `You are an expert at extracting structured data from receipts and invoices.
 Analyze this receipt image and extract the following information in JSON format:
@@ -94,10 +94,7 @@ Rules:
                     ],
                     generationConfig: {
                         temperature: 0.1,
-                        topK: 1,
-                        topP: 1,
-                        maxOutputTokens: 512,
-                        responseMimeType: 'application/json',
+                        maxOutputTokens: 1024,
                     },
                 }),
             }
@@ -118,10 +115,16 @@ Rules:
         try {
             ocrData = JSON.parse(rawText.trim());
         } catch (e) {
-            console.warn('Direct JSON parsing failed, trying regex match:', e);
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error('Could not parse JSON from Gemini response');
-            ocrData = JSON.parse(jsonMatch[0]);
+            console.warn('Direct JSON parsing failed, trying regex match. Raw text:', rawText);
+            // Strip markdown code fences if present
+            const stripped = rawText.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+            try {
+                ocrData = JSON.parse(stripped);
+            } catch (e2) {
+                const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error('Could not parse JSON from Gemini response');
+                ocrData = JSON.parse(jsonMatch[0]);
+            }
         }
 
         res.status(200).json({
