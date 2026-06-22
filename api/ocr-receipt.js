@@ -57,7 +57,7 @@ export default async function handler(req, res) {
 
         const base64Data = image.includes(',') ? image.split(',')[1] : image;
         const mimeType = image.startsWith('data:') ? image.split(';')[0].split(':')[1] : 'image/jpeg';
-        const GEMINI_MODEL = 'gemini-2.0-flash';
+        const GEMINI_MODEL = 'gemini-2.5-flash';
 
         const prompt = `You are an expert at extracting structured data from receipts and invoices.
 Analyze this receipt image and extract the following information in JSON format:
