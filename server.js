@@ -44,96 +44,103 @@ const transporter = nodemailer.createTransport({
 
 app.post('/api/submit-project', async (req, res) => {
     try {
-        const { projectId } = req.body;
+        const { projectId, project: inputProject, expenses: inputExpenses, secretaryEmail: inputSecretaryEmail } = req.body;
 
-        if (!projectId) return res.status(400).json({ error: 'Project ID required' });
-        if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase not configured' });
+        if (!projectId && !inputProject) return res.status(400).json({ error: 'Project ID or project payload required' });
 
-        // Verify auth token
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing or invalid authorization token' });
+        let project = inputProject;
+        let expenseList = inputExpenses || [];
+        let SECRETARY_EMAIL = inputSecretaryEmail;
+
+        // If direct payload is provided, use it directly (Local-first mode)
+        if (project && expenseList.length > 0) {
+            if (!SECRETARY_EMAIL) {
+                return res.status(400).json({ error: 'No secretary email provided.' });
+            }
+            console.log(`[Local-First Mode] Submitting project ${project.name} to secretary: ${SECRETARY_EMAIL}`);
+        } else {
+            // Fallback to fetching from Supabase if payload is not provided
+            if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase not configured for server fetch' });
+
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Missing or invalid authorization token' });
+            }
+            const token = authHeader.split(' ')[1];
+            const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+            if (authError || !user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
+            }
+
+            const supabase = createClient(supabaseUrl, supabaseKey, {
+                global: { headers: { Authorization: `Bearer ${token}` } }
+            });
+
+            const { data: profileData } = await supabase
+                .from('profiles').select('secretary_email, email').eq('id', user.id).single();
+
+            SECRETARY_EMAIL = profileData?.secretary_email || profileData?.email;
+            if (!SECRETARY_EMAIL) {
+                return res.status(400).json({ error: 'No secretary email configured. Please set it in your profile.' });
+            }
+
+            const { data: fetchedProject, error: projErr } = await supabase
+                .from('projects').select('*').eq('id', projectId).single();
+            if (projErr || !fetchedProject) throw new Error(`Project not found: ${projectId}`);
+            project = fetchedProject;
+
+            const { data: fetchedExpenses } = await supabase
+                .from('expenses').select('*').eq('project_id', projectId)
+                .order('date', { ascending: true });
+            expenseList = fetchedExpenses || [];
+
+            const expenseIds = expenseList.map(e => e.id);
+            let allAttachments = [];
+            if (expenseIds.length > 0) {
+                const { data } = await supabase
+                    .from('attachments').select('*').in('expense_id', expenseIds);
+                allAttachments = data || [];
+            }
+            const attachmentsByExpense = {};
+            allAttachments.forEach(att => {
+                if (!attachmentsByExpense[att.expense_id]) attachmentsByExpense[att.expense_id] = [];
+                attachmentsByExpense[att.expense_id].push(att);
+            });
+            expenseList.forEach(e => {
+                e.attachments = attachmentsByExpense[e.id] || [];
+            });
         }
-        const token = authHeader.split(' ')[1];
-        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-        if (authError || !user) {
-            return res.status(401).json({ error: 'Invalid or expired token' });
-        }
 
-        // Create authenticated Supabase client with user's token (so RLS works)
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } }
-        });
-
-        // 0. Fetch secretary email from authenticated user's profile
-        const { data: profileData } = await supabase
-            .from('profiles').select('secretary_email, email').eq('id', user.id).single();
-
-        const SECRETARY_EMAIL = profileData?.secretary_email || profileData?.email;
-        if (!SECRETARY_EMAIL) {
-            return res.status(400).json({ error: 'No secretary email configured. Please set it in your profile.' });
-        }
-        console.log(`Sending to secretary: ${SECRETARY_EMAIL}`);
-
-        // 1. Fetch Project
-        const { data: project, error: projErr } = await supabase
-            .from('projects').select('*').eq('id', projectId).single();
-
-        if (projErr || !project) throw new Error(`Project not found: ${projectId}`);
-
-        // 2. Fetch Expenses
-        const { data: expenses } = await supabase
-            .from('expenses').select('*').eq('project_id', projectId)
-            .order('date', { ascending: true });
-
-        const expenseList = expenses || [];
         const totalAmount = expenseList.reduce((sum, e) => sum + Number(e.amount), 0);
 
-        // 3. Fetch Attachments
-        const expenseIds = expenseList.map(e => e.id);
-        let allAttachments = [];
-        if (expenseIds.length > 0) {
-            const { data } = await supabase
-                .from('attachments').select('*').in('expense_id', expenseIds);
-            allAttachments = data || [];
-        }
-
-        const attachmentsByExpense = {};
-        allAttachments.forEach(att => {
-            if (!attachmentsByExpense[att.expense_id]) attachmentsByExpense[att.expense_id] = [];
-            attachmentsByExpense[att.expense_id].push(att);
-        });
-
-        // 4. Download and Rename Attachments
+        // Download and Process Attachments
         const emailAttachments = [];
         let globalAttCount = 0;
 
         for (const expense of expenseList) {
-            const expAtts = attachmentsByExpense[expense.id] || [];
-            console.log(`Processing ${expAtts.length} attachments for expense: ${expense.merchant}`);
+            const expAtts = expense.attachments || [];
+            console.log(`Processing ${expAtts.length} attachments for expense: ${expense.merchant || expense.expenseName}`);
 
             for (const att of expAtts) {
                 try {
                     let buffer;
-                    let contentType = '';
+                    let contentType = att.type || '';
 
                     if (att.url.startsWith('data:')) {
-                        // Handle Data URI
                         const parts = att.url.split(',');
-                        const mime = parts[0].match(/:(.*?);/)[1];
+                        const mime = parts[0].match(/:(.*?);/)?.[1] || att.type || 'image/jpeg';
                         contentType = mime;
                         const base64Data = parts[parts.length - 1];
                         buffer = Buffer.from(base64Data, 'base64');
                     } else {
-                        // Handle Remote URL
                         const response = await fetch(att.url);
                         if (!response.ok) {
-                            console.error(`Failed to download: ${att.url}`);
+                            console.error(`Failed to download attachment: ${att.url}`);
                             continue;
                         }
                         const arrayBuffer = await response.arrayBuffer();
                         buffer = Buffer.from(arrayBuffer);
-                        contentType = response.headers.get('content-type');
+                        contentType = response.headers.get('content-type') || contentType;
                     }
 
                     // Robust extension detection
@@ -317,16 +324,13 @@ app.post('/api/ocr-receipt', async (req, res) => {
             return res.status(400).json({ error: 'No image provided' });
         }
 
-        // Verify auth token
+        // Verify auth token (if present and Supabase is configured)
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing or invalid authorization token' });
-        }
-        if (supabaseAdmin) {
+        if (authHeader && authHeader.startsWith('Bearer ') && supabaseAdmin) {
             const token = authHeader.split(' ')[1];
             const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
             if (authError || !user) {
-                return res.status(401).json({ error: 'Invalid or expired token' });
+                console.warn('Optional auth token verification failed, continuing in local mode');
             }
         }
 

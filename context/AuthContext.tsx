@@ -20,34 +20,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            setLoading(false);
-        });
+        const initAuth = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    setSession(session);
+                    setUser(session.user);
+                } else {
+                    // Fallback to local offline user session
+                    const localUser: any = { id: 'local_user', email: 'user@company.com' };
+                    setUser(localUser);
+                }
+            } catch (err) {
+                console.warn('Supabase auth unavailable, operating in local-first mode:', err);
+                const localUser: any = { id: 'local_user', email: 'user@company.com' };
+                setUser(localUser);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, session) => {
-                setSession(session);
-                setUser(session?.user ?? null);
-                setLoading(false);
-
-                // On first sign-up, migrate existing data to this user
-                if (_event === 'SIGNED_IN' && session?.user) {
-                    const migrated = localStorage.getItem('apex_data_migrated');
-                    if (!migrated) {
-                        try {
-                            await supabase.rpc('migrate_existing_data_to_user', {
-                                target_user_id: session.user.id,
-                            });
-                            localStorage.setItem('apex_data_migrated', 'true');
-                        } catch (err) {
-                            console.error('Data migration error:', err);
-                        }
-                    }
+                if (session) {
+                    setSession(session);
+                    setUser(session.user);
+                } else {
+                    const localUser: any = { id: 'local_user', email: 'user@company.com' };
+                    setUser(localUser);
                 }
+                setLoading(false);
             }
         );
 

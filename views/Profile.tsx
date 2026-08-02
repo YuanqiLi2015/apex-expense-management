@@ -1,21 +1,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-
-interface ProfileData {
-  id: string;
-  name: string;
-  role: string;
-  profilePic: string;
-  personalEmail: string;
-  secretaryEmail: string;
-}
+import { getLocalProfile, saveLocalProfile, UserProfile } from '../lib/db';
 
 const Profile: React.FC = () => {
-  const { user, signOut } = useAuth();
-  const [profile, setProfile] = useState<ProfileData>({
-    id: '',
+  const { signOut } = useAuth();
+  const [profile, setProfile] = useState<UserProfile>({
+    id: 'default_user',
     name: 'Loading...',
     role: '',
     profilePic: '',
@@ -27,57 +18,29 @@ const Profile: React.FC = () => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = useCallback(async () => {
-    if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
+    try {
+      const data = await getLocalProfile();
+      setProfile(data);
+    } catch (err) {
+      console.error('Error fetching profile from IndexedDB:', err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (data) {
-      setProfile({
-        id: data.id,
-        name: data.name,
-        role: data.role || '',
-        profilePic: data.profile_pic || '',
-        personalEmail: data.email || '',
-        secretaryEmail: data.secretary_email || '',
-      });
-    }
-    setLoading(false);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  const updateProfile = async (updates: Partial<ProfileData>) => {
-    const dbUpdates: Record<string, any> = {};
-    if (updates.name !== undefined) dbUpdates.name = updates.name;
-    if (updates.role !== undefined) dbUpdates.role = updates.role;
-    if (updates.profilePic !== undefined) dbUpdates.profile_pic = updates.profilePic;
-    if (updates.personalEmail !== undefined) dbUpdates.email = updates.personalEmail;
-    if (updates.secretaryEmail !== undefined) dbUpdates.secretary_email = updates.secretaryEmail;
-    dbUpdates.updated_at = new Date().toISOString();
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(dbUpdates)
-      .eq('id', profile.id);
-
-    if (error) {
-      console.error('Error updating profile:', error);
-      return;
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    const updated = { ...profile, ...updates };
+    try {
+      await saveLocalProfile(updated);
+      setProfile(updated);
+    } catch (err) {
+      console.error('Error updating profile in IndexedDB:', err);
     }
-
-    setProfile(prev => ({ ...prev, ...updates }));
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,35 +49,28 @@ const Profile: React.FC = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${profile.id}-${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      await updateProfile({ profilePic: urlData.publicUrl });
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const base64 = evt.target?.result as string;
+        await updateProfile({ profilePic: base64 });
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
-      console.error('Error uploading avatar:', err);
-      alert('Failed to upload avatar. Please try again.');
-    } finally {
+      console.error('Error processing avatar:', err);
+      alert('Failed to update avatar.');
       setUploading(false);
+    } finally {
       if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
 
-  const handleEditInfo = (field: keyof ProfileData, label: string) => {
+  const handleEditInfo = (field: keyof UserProfile, label: string) => {
     const currentValue = profile[field] as string;
     const newValue = window.prompt(`Update ${label}:`, currentValue);
 
     if (newValue !== null && newValue.trim() !== '') {
-      updateProfile({ [field]: newValue.trim() } as Partial<ProfileData>);
+      updateProfile({ [field]: newValue.trim() } as Partial<UserProfile>);
     }
   };
 

@@ -28,67 +28,82 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { projectId } = req.body;
-        if (!projectId) return res.status(400).json({ error: 'Project ID required' });
+        const { projectId, project: inputProject, expenses: inputExpenses, secretaryEmail: inputSecretaryEmail } = req.body;
 
-        const supabaseUrl = process.env.VITE_SUPABASE_URL;
-        const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-        const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+        if (!projectId && !inputProject) return res.status(400).json({ error: 'Project ID or project payload required' });
 
-        if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase not configured' });
+        let project = inputProject;
+        let expenseList = inputExpenses || [];
+        let SECRETARY_EMAIL = inputSecretaryEmail;
 
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing or invalid authorization token' });
+        if (project && expenseList.length > 0) {
+            if (!SECRETARY_EMAIL) {
+                return res.status(400).json({ error: 'No secretary email provided.' });
+            }
+            console.log(`[Vercel Serverless] Submitting project ${project.name} to secretary: ${SECRETARY_EMAIL}`);
+        } else {
+            const supabaseUrl = process.env.VITE_SUPABASE_URL;
+            const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+            const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
+            if (!supabaseAdmin) return res.status(500).json({ error: 'Supabase not configured' });
+
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Missing or invalid authorization token' });
+            }
+            const token = authHeader.split(' ')[1];
+            const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+            if (authError || !user) {
+                return res.status(401).json({ error: 'Invalid or expired token' });
+            }
+
+            const supabase = createClient(supabaseUrl, supabaseKey, {
+                global: { headers: { Authorization: `Bearer ${token}` } }
+            });
+
+            const { data: profileData } = await supabase
+                .from('profiles').select('secretary_email, email').eq('id', user.id).single();
+
+            SECRETARY_EMAIL = profileData?.secretary_email || profileData?.email;
+            if (!SECRETARY_EMAIL) {
+                return res.status(400).json({ error: 'No secretary email configured. Please set it in your profile.' });
+            }
+
+            const { data: fetchedProject, error: projErr } = await supabase
+                .from('projects').select('*').eq('id', projectId).single();
+            if (projErr || !fetchedProject) throw new Error(`Project not found: ${projectId}`);
+            project = fetchedProject;
+
+            const { data: fetchedExpenses } = await supabase
+                .from('expenses').select('*').eq('project_id', projectId)
+                .order('date', { ascending: true });
+            expenseList = fetchedExpenses || [];
+
+            const expenseIds = expenseList.map(e => e.id);
+            let allAttachments = [];
+            if (expenseIds.length > 0) {
+                const { data } = await supabase
+                    .from('attachments').select('*').in('expense_id', expenseIds);
+                allAttachments = data || [];
+            }
+            const attachmentsByExpense = {};
+            allAttachments.forEach(att => {
+                if (!attachmentsByExpense[att.expense_id]) attachmentsByExpense[att.expense_id] = [];
+                attachmentsByExpense[att.expense_id].push(att);
+            });
+            expenseList.forEach(e => {
+                e.attachments = attachmentsByExpense[e.id] || [];
+            });
         }
-        const token = authHeader.split(' ')[1];
-        const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-        if (authError || !user) {
-            return res.status(401).json({ error: 'Invalid or expired token' });
-        }
 
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-            global: { headers: { Authorization: `Bearer ${token}` } }
-        });
-
-        const { data: profileData } = await supabase
-            .from('profiles').select('secretary_email, email').eq('id', user.id).single();
-
-        const SECRETARY_EMAIL = profileData?.secretary_email || profileData?.email;
-        if (!SECRETARY_EMAIL) {
-            return res.status(400).json({ error: 'No secretary email configured. Please set it in your profile.' });
-        }
-
-        const { data: project, error: projErr } = await supabase
-            .from('projects').select('*').eq('id', projectId).single();
-        if (projErr || !project) throw new Error(`Project not found: ${projectId}`);
-
-        const { data: expenses } = await supabase
-            .from('expenses').select('*').eq('project_id', projectId)
-            .order('date', { ascending: true });
-
-        const expenseList = expenses || [];
         const totalAmount = expenseList.reduce((sum, e) => sum + Number(e.amount), 0);
-
-        const expenseIds = expenseList.map(e => e.id);
-        let allAttachments = [];
-        if (expenseIds.length > 0) {
-            const { data } = await supabase
-                .from('attachments').select('*').in('expense_id', expenseIds);
-            allAttachments = data || [];
-        }
-
-        const attachmentsByExpense = {};
-        allAttachments.forEach(att => {
-            if (!attachmentsByExpense[att.expense_id]) attachmentsByExpense[att.expense_id] = [];
-            attachmentsByExpense[att.expense_id].push(att);
-        });
 
         const emailAttachments = [];
         let globalAttCount = 0;
 
         for (const expense of expenseList) {
-            const expAtts = attachmentsByExpense[expense.id] || [];
+            const expAtts = expense.attachments || [];
             for (const att of expAtts) {
                 try {
                     let buffer;

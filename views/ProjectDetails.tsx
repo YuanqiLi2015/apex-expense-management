@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { getLocalProfile } from '../lib/db';
 
 const ProjectDetails: React.FC = () => {
   const navigate = useNavigate();
@@ -49,9 +50,9 @@ const ProjectDetails: React.FC = () => {
 
     setSubmitting(true);
     try {
-      // Get current auth token
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+      const profile = await getLocalProfile();
 
       const response = await fetch('/api/submit-project', {
         method: 'POST',
@@ -59,7 +60,12 @@ const ProjectDetails: React.FC = () => {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ projectId: project.id }),
+        body: JSON.stringify({
+          projectId: project.id,
+          project: project,
+          expenses: projectExpenses,
+          secretaryEmail: profile.secretaryEmail || profile.personalEmail,
+        }),
       });
 
       let result;

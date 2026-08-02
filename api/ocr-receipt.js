@@ -42,16 +42,13 @@ export default async function handler(req, res) {
         const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
         const supabaseAdmin = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
-        // Verify auth token
+        // Verify auth token (if present and Supabase is configured)
         const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Missing or invalid authorization token' });
-        }
-        if (supabaseAdmin) {
+        if (authHeader && authHeader.startsWith('Bearer ') && supabaseAdmin) {
             const token = authHeader.split(' ')[1];
             const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
             if (authError || !user) {
-                return res.status(401).json({ error: 'Invalid or expired token' });
+                console.warn('Optional auth token verification failed, continuing in local mode');
             }
         }
 
